@@ -65,7 +65,7 @@ jobs:
 
       - name: Run pyrefly (optional)
         if: ${{ github.event.inputs.run_pyrefly == 'true' }}
-        run: uv run pyrefly check "${{ github.event.inputs.package_path }}"
+        run: uv run pyrefly check "${{ github.event.inputs.package_path }}" --project-excludes "**/*.ipynb"
 
   test:
     runs-on: ubuntu-latest
