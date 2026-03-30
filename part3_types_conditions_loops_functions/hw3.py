@@ -242,7 +242,7 @@ def cost_handler(category_name: str, amount: float, income_date: str) -> str:
         financial_transactions_storage.append({})
         return status
 
-    if parsed_category is None: # без этой проверки линтер ругается #
+    if parsed_category is None:  # без этой проверки линтер ругается
         financial_transactions_storage.append({})
         return UNKNOWN_COMMAND_MSG
 
