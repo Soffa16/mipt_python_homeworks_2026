@@ -77,7 +77,7 @@ def reverse_date(date: Date) -> Date:
     return date[2], date[1], date[0]
 
 
-def was_before(lhs_date: Date, rhs_date: Date) -> bool:
+def is_before(lhs_date: Date, rhs_date: Date) -> bool:
     return reverse_date(lhs_date) <= reverse_date(rhs_date)
 
 
@@ -139,7 +139,7 @@ def count_capital(target_date: Date) -> float:
     total: float = ZERO_AMOUNT
 
     for operation_type, amount, operation_date, _ in iter_valid_operations():
-        if not was_before(operation_date, target_date):
+        if not is_before(operation_date, target_date):
             continue
 
         if operation_type == INCOME_TYPE:
@@ -223,19 +223,22 @@ def income_handler(amount: float, income_date: str) -> str:
 
 
 def cost_handler(category_name: str, amount: float, income_date: str) -> str:
+    status: str | None = None
+
     if amount <= 0:
-        financial_transactions_storage.append({})
-        return NONPOSITIVE_VALUE_MSG
+        status = NONPOSITIVE_VALUE_MSG
+    else:
+        date = extract_date(income_date)
+        if date is None:
+            status = INCORRECT_DATE_MSG
+        else:
+            parsed_category = parse_category_name(category_name)
+            if parsed_category is None:
+                status = NOT_EXISTS_CATEGORY
 
-    date = extract_date(income_date)
-    if date is None:
+    if status is not None:
         financial_transactions_storage.append({})
-        return INCORRECT_DATE_MSG
-
-    parsed_category = parse_category_name(category_name)
-    if parsed_category is None:
-        financial_transactions_storage.append({})
-        return NOT_EXISTS_CATEGORY
+        return status
 
     _, direct_category = parsed_category
     financial_transactions_storage.append(
