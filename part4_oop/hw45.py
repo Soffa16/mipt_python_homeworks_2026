@@ -167,7 +167,8 @@ class LFUPolicy(Policy[K]):
         return bool(self._key_counter)
 
     def _without_recent_key(self) -> dict[K, int]:
-        return {key: count for key, count in self._key_counter.items() if key != self._recent_key}
+        items = self._key_counter.items()
+        return {key: value for key, value in items if key != self._recent_key}
 
 
 class MIPTCache(Cache[K, V]):
