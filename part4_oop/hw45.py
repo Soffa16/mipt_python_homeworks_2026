@@ -140,11 +140,7 @@ class LFUPolicy(Policy[K]):
 
         candidates = self._key_counter
         if self._recent_key is not None:
-            candidates = {
-                key: count
-                for key, count in self._key_counter.items()
-                if key != self._recent_key
-            }
+            candidates = self._without_recent_key()
 
         if not candidates:
             return None
@@ -170,6 +166,9 @@ class LFUPolicy(Policy[K]):
     def has_keys(self) -> bool:
         return bool(self._key_counter)
 
+    def _without_recent_key(self) -> dict[K, int]:
+        return {key: count for key, count in self._key_counter.items() if key != self._recent_key}
+
 
 class MIPTCache(Cache[K, V]):
     def __init__(self, storage: Storage[K, V], policy: Policy[K]) -> None:
@@ -183,11 +182,7 @@ class MIPTCache(Cache[K, V]):
         if not already_exists:
             capacity = getattr(self.policy, "capacity", None)
             storage_size = self._storage_size()
-            if (
-                isinstance(capacity, int)
-                and isinstance(storage_size, int)
-                and storage_size >= capacity
-            ):
+            if isinstance(capacity, int) and isinstance(storage_size, int) and storage_size >= capacity:
                 evict = self.policy.get_key_to_evict()
                 if evict is not None and self.storage.exists(evict):
                     self.storage.remove(evict)
