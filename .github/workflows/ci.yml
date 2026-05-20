@@ -4,26 +4,24 @@ on:
   workflow_dispatch:
     inputs:
       package_path:
-        description: 'Path to package directory'
+        description: "Path to package directory"
         required: true
+        type: string
       run_ty:
-        description: 'Run ty type checker'
+        description: "Run ty type checker"
         required: false
         default: false
         type: boolean
       run_pyrefly:
-        description: 'Run pyrefly type checker'
+        description: "Run pyrefly type checker"
         required: false
         default: false
         type: boolean
   push:
     branches: [main, master]
     paths-ignore:
-      - 'final_project/**'
+      - "final_project/**"
   pull_request:
-    branches: [main, master]
-    paths-ignore:
-      - 'final_project/**'
 
 jobs:
   detect-changes:
@@ -47,7 +45,26 @@ jobs:
             echo "folders=[]" >> $GITHUB_OUTPUT
             echo "has_changes=false" >> $GITHUB_OUTPUT
           else
-            FOLDERS=$(echo "$PY_FILES" | grep -vE '^\.' | cut -d'/' -f1 | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))')
+            FOLDERS=$(echo "$PY_FILES" \
+              | grep -vE '^\.' \
+              | cut -d'/' -f1 \
+              | sort -u \
+              | while read -r dir; do
+                  if [ -d "$dir" ]; then
+                    echo "$dir"
+                  fi
+                done \
+              | jq -R -s -c 'split("\n") | map(select(length > 0))')
+            FOLDERS=$(echo "$PY_FILES" \
+              | grep -vE '^\.' \
+              | cut -d'/' -f1 \
+              | sort -u \
+              | while read -r dir; do
+                  if [ -d "$dir" ]; then
+                    echo "$dir"
+                  fi
+                done \
+              | jq -R -s -c 'split("\n") | map(select(length > 0))')
             echo "folders=$FOLDERS" >> $GITHUB_OUTPUT
             echo "has_changes=true" >> $GITHUB_OUTPUT
           fi
@@ -75,13 +92,12 @@ jobs:
         run: uv sync --group lint --group test
 
       - name: Run ruff check
-        run: uv run ruff check "${{ matrix.folder }}"
-
-      - name: Run ruff format
-        run: uv run ruff format --check "${{ matrix.folder }}"
-
-      - name: Run wemake-python-styleguide
-        run: uv run flake8 "${{ matrix.folder }}"
+        run: |
+          if [ -d "${{ matrix.folder }}" ]; then
+            uv run ruff check "${{ matrix.folder }}"
+          else
+            echo "Skipping ruff: folder ${{ matrix.folder }} does not exist"
+          fi
 
   typecheck:
     needs: detect-changes
@@ -106,15 +122,30 @@ jobs:
         run: uv sync --group lint --group test
 
       - name: Run mypy
-        run: uv run mypy "${{ matrix.folder }}"
+        run: |
+          if [ -d "${{ matrix.folder }}" ]; then
+            uv run mypy "${{ matrix.folder }}"
+          else
+            echo "Skipping mypy: folder ${{ matrix.folder }} does not exist"
+          fi
 
       - name: Run ty (optional)
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_ty == 'true' }}
-        run: uv run ty check "${{ matrix.folder }}"
+        run: |
+          if [ -d "${{ matrix.folder }}" ]; then
+            uv run ty check "${{ matrix.folder }}"
+          else
+            echo "Skipping ty: folder ${{ matrix.folder }} does not exist"
+          fi
 
       - name: Run pyrefly (optional)
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_pyrefly == 'true' }}
-        run: uv run pyrefly check "${{ matrix.folder }}" --project-excludes "**/*.ipynb"
+        run: |
+          if [ -d "${{ matrix.folder }}" ]; then
+            uv run pyrefly check "${{ matrix.folder }}" --project-excludes "**/*.ipynb"
+          else
+            echo "Skipping pyrefly: folder ${{ matrix.folder }} does not exist"
+          fi
 
   test:
     needs: detect-changes

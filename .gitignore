@@ -1,3 +1,7 @@
+# Final project secrets and local env
+final_project/config.yaml
+final_project/.venv/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
